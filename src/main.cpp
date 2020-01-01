@@ -13,7 +13,7 @@ int main(){
     for (size_t i = 0; i < xDim; ++i){
         for (size_t j = 0; j < yDim; ++j){
             x(i, j) = 2.0f;
-            y(i, j) = 3.0f;
+            y(i, j) = 5.5f;
         }
     }
     z = x + y;
