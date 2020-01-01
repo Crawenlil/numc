@@ -12,12 +12,15 @@
 
 #define INSTANTIATE_operation_kernel(TYPE, OP) \
     template __global__ void operation_kernel<OP<TYPE>, TYPE>(\
-            const typename Matrix<TYPE>::MatrixGPU *,\
-            const typename Matrix<TYPE>::MatrixGPU *,\
-            typename Matrix<TYPE>::MatrixGPU *, OP<TYPE>);
+            const MatrixGPU<TYPE> *,\
+            const MatrixGPU<TYPE> *,\
+            MatrixGPU<TYPE> *, OP<TYPE>);
 
 template <typename T>
 class Matrix;
+
+template <typename T>
+class MatrixGPU;
 
 template <typename Op, typename T>
 __host__
@@ -25,11 +28,10 @@ void apply(const Matrix<T> &x, const Matrix<T> &y, Matrix<T> &dest, Op op);
 
 template<typename Op, typename T>
 __global__
-void operation_kernel(const typename Matrix<T>::MatrixGPU *x, 
-                      const typename Matrix<T>::MatrixGPU *y,
-                      typename Matrix<T>::MatrixGPU *dest,
+void operation_kernel(const MatrixGPU<T> *x, 
+                      const MatrixGPU<T> *y,
+                      MatrixGPU<T> *dest,
                       Op op);
-
 
 template<typename T>
 class Add{
@@ -56,40 +58,38 @@ public:
 };
 
 template <typename T>
+class MatrixGPU {
+    private:
+        T *elements;
+        size_t *xDim;
+        size_t *yDim;
+    
+    public:
+        __host__ MatrixGPU();
+        __host__ MatrixGPU(const MatrixGPU &other);
+        __host__ MatrixGPU(const size_t xDim, const size_t yDim);
+        __host__ ~MatrixGPU();
+        __host__ __device__ size_t& getXDim() const;
+        __host__ __device__ size_t& getYDim() const;
+        __host__ MatrixGPU<T>& operator=(const MatrixGPU<T> &other);
+        __host__ __device__ const T& operator()(size_t i, size_t j) const;
+        __host__ __device__ T& operator()(size_t i, size_t j);
+};
+
+template <typename T>
 class Matrix{
     public: 
-
-        class MatrixGPU {
-        private:
-            T *elements;
-            size_t *xDim;
-            size_t *yDim;
-
-        public:
-            __host__ MatrixGPU();
-            __host__ MatrixGPU(const MatrixGPU &other);
-            __host__ MatrixGPU(const size_t xDim, const size_t yDim);
-            __host__ ~MatrixGPU();
-            __host__ __device__ size_t& getXDim() const;
-            __host__ __device__ size_t& getYDim() const;
-            __host__ __device__ MatrixGPU& operator=(const MatrixGPU &other);
-            __host__ __device__ const T& operator()(size_t i, size_t j) const;
-            __host__ __device__ T& operator()(size_t i, size_t j);
-
-    };
-
-    public: 
-        MatrixGPU *matrixGPU;
+        MatrixGPU<T> *matrixGPU;
         __host__ Matrix();
         __host__ Matrix(const Matrix<T> &other);
         __host__ Matrix(const size_t xDim, const size_t yDim);
-        __host__ Matrix(const MatrixGPU &other);
+        __host__ Matrix(const MatrixGPU<T> &other);
         __host__ ~Matrix();
-        __host__ __device__ size_t& getXDim() const;
-        __host__ __device__ size_t& getYDim() const;
-        __host__ __device__ Matrix<T>& operator=(const Matrix<T> &other);
-        __host__ __device__ const T& operator()(size_t i, size_t j) const;
-        __host__ __device__ T& operator()(size_t i, size_t j);
+        __host__ size_t& getXDim() const;
+        __host__ size_t& getYDim() const;
+        __host__ Matrix<T>& operator=(const Matrix<T> &other);
+        __host__ const T& operator()(size_t i, size_t j) const;
+        __host__ T& operator()(size_t i, size_t j);
         __host__ Matrix<T> operator+(const Matrix& other) const;
         // __host__ Matrix<T> operator-(const Matrix& other) const;
         // __host__ Matrix<T> operator*(const Matrix& other) const;
@@ -102,8 +102,8 @@ class Matrix{
 
 template<typename T>
 __host__
-Matrix<T>::MatrixGPU::MatrixGPU(){
-    printf("MatrixGPU constructor\n");
+MatrixGPU<T>::MatrixGPU(){
+    printf("MatrixGPU() constructor\n");
     cudaMallocManaged(&elements, sizeof(T));
     cudaMallocManaged(&xDim, sizeof(size_t));
     cudaMallocManaged(&yDim, sizeof(size_t));
@@ -114,8 +114,8 @@ Matrix<T>::MatrixGPU::MatrixGPU(){
 
 template <typename T>
 __host__  
-Matrix<T>::MatrixGPU::MatrixGPU(const MatrixGPU &other){
-    printf("Copy constructor, other value: %f\n", other(0,0));
+MatrixGPU<T>::MatrixGPU(const MatrixGPU &other){
+    printf("MatrixGPU copy constructor\n");
     cudaMallocManaged(&elements, sizeof(T) * other.getXDim() * other.getYDim());
     cudaMallocManaged(&xDim, sizeof(size_t));
     cudaMallocManaged(&yDim, sizeof(size_t));
@@ -130,17 +130,20 @@ Matrix<T>::MatrixGPU::MatrixGPU(const MatrixGPU &other){
 
 template <typename T>
 __host__
-Matrix<T>::MatrixGPU::MatrixGPU(const size_t _xDim, const size_t _yDim) {
+MatrixGPU<T>::MatrixGPU(const size_t _xDim, const size_t _yDim) {
+    printf("MatrixGPU(xDim, yDim) constructor\n");
     cudaMallocManaged(&elements, sizeof(T) * _xDim * _yDim);
     cudaMallocManaged(&xDim, sizeof(size_t));
     cudaMallocManaged(&yDim, sizeof(size_t));
     *xDim = _xDim;
     *yDim = _yDim;
+    printf("_xDim %d= , _yDim = %d\n", _xDim, _yDim);
 }
 
 template <typename T>
 __host__
-Matrix<T>::MatrixGPU::~MatrixGPU(){
+MatrixGPU<T>::~MatrixGPU(){
+    printf("~MatrixGPU\n");
     cudaFree(elements);
     cudaFree(xDim);
     cudaFree(yDim);
@@ -148,37 +151,40 @@ Matrix<T>::MatrixGPU::~MatrixGPU(){
 
 template <typename T>
 __host__ __device__ 
-size_t& Matrix<T>::MatrixGPU::getXDim() const{
+size_t& MatrixGPU<T>::getXDim() const{
     return *xDim;
 }
 
 template <typename T>
 __host__ __device__ 
-size_t& Matrix<T>::MatrixGPU::getYDim() const{
+size_t& MatrixGPU<T>::getYDim() const{
     return *yDim;
 }
 
-
 template<class T>
-__host__ __device__
-typename Matrix<T>::MatrixGPU& Matrix<T>::MatrixGPU::operator=(const typename Matrix<T>::MatrixGPU &other) {
-    *xDim = other.getXDim();
-    *yDim = other.getYDim();
-    for(size_t i = 0; i < getXDim() * getYDim(); ++i){
-       elements[i] = other.elements[i];
+__host__
+MatrixGPU<T>& MatrixGPU<T>::operator=(const MatrixGPU<T> &other) {
+    if (this != &other){
+        printf("xDim = %d\n", *xDim);
+        *xDim = other.getXDim();
+        *yDim = other.getYDim();
+        printf("There\n");
+        for(size_t i = 0; i < getXDim() * getYDim(); ++i){
+           elements[i] = other.elements[i];
+        }
     }
     return *this;
 }
 
 template <typename T>
 __host__ __device__
-const T& Matrix<T>::MatrixGPU::operator()(size_t i, size_t j) const {
+const T& MatrixGPU<T>::operator()(size_t i, size_t j) const {
     return elements[(getXDim() * i) + j];
 }
 
 template <typename T>
 __host__ __device__
-T& Matrix<T>::MatrixGPU::operator()(size_t i, size_t j) {
+T& MatrixGPU<T>::operator()(size_t i, size_t j) {
     return elements[(getXDim() * i) + j];
 }
 
@@ -192,15 +198,15 @@ template<typename T>
 __host__
 Matrix<T>::Matrix(){
     printf("Matrix constructor\n");
-    cudaMallocManaged(&matrixGPU, sizeof(MatrixGPU));
+    cudaMallocManaged(&matrixGPU, sizeof(MatrixGPU<T>));
 }
 
 
 template <typename T>
 __host__  
 Matrix<T>::Matrix(const Matrix<T> &other){
-    printf("Copy constructor, other value: %f\n", other(0,0));
-    cudaMallocManaged(&matrixGPU, sizeof(MatrixGPU));
+    printf("Matrix copy constructor\n");
+    cudaMallocManaged(&matrixGPU, sizeof(MatrixGPU<T>));
     *matrixGPU = *(other.matrixGPU);
 }
 
@@ -208,20 +214,26 @@ Matrix<T>::Matrix(const Matrix<T> &other){
 template <typename T>
 __host__
 Matrix<T>::Matrix(const size_t _xDim, const size_t _yDim) {
-    cudaMallocManaged(&matrixGPU, sizeof(MatrixGPU));
-    *matrixGPU = MatrixGPU(_xDim, _yDim);
+    printf("Matrix(xDim, yDim) constructor\n");
+    cudaMallocManaged(&matrixGPU, sizeof(MatrixGPU<T>));
+    printf("Here\n");
+    MatrixGPU<T> other(_xDim, _yDim);
+    *matrixGPU = other;
+    printf("Here3\n");
 }
 
 template <typename T>
 __host__
-Matrix<T>::Matrix(const MatrixGPU &_matrixGPU){
-    cudaMallocManaged(&matrixGPU, sizeof(MatrixGPU));
+Matrix<T>::Matrix(const MatrixGPU<T> &_matrixGPU){
+    printf("Matrix(MatrixGPU) constructor\n");
+    cudaMallocManaged(&matrixGPU, sizeof(MatrixGPU<T>));
     *matrixGPU = _matrixGPU;
 }
 
 template <typename T>
 __host__
 Matrix<T>::~Matrix(){
+    printf("~Matrix\n");
     cudaFree(matrixGPU);
 }
 
@@ -240,7 +252,7 @@ size_t& Matrix<T>::getYDim() const{
 
 template<class T>
 __host__ 
-Matrix<T>& Matrix<T>::operator=(const Matrix<T>& other) {
+Matrix<T>& Matrix<T>::operator=(const Matrix<T> &other) {
     *matrixGPU = *(other.matrixGPU);
     return *this;
 }

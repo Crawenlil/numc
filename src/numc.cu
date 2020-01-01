@@ -1,7 +1,6 @@
 #include "numc.cuh"
 
 
-
 template <typename Op, typename T>
 __host__
 void apply(const Matrix<T> &x, const Matrix<T> &y, Matrix<T> &dest, Op op) {
@@ -24,13 +23,13 @@ void apply(const Matrix<T> &x, const Matrix<T> &y, Matrix<T> &dest, Op op) {
 
 template<typename Op, typename T>
 __global__
-void operation_kernel(const typename Matrix<T>::MatrixGPU *xptr,
-                      const typename Matrix<T>::MatrixGPU *yptr, 
-                      typename Matrix<T>::MatrixGPU *destptr, 
+void operation_kernel(const MatrixGPU<T> *xptr,
+                      const  MatrixGPU<T> *yptr, 
+                      MatrixGPU<T> *destptr, 
                       Op op) {
-    const typename Matrix<T>::MatrixGPU &x = *xptr; 
-    const typename Matrix<T>::MatrixGPU &y = *yptr; 
-    typename Matrix<T>::MatrixGPU &dest = *destptr; 
+    const MatrixGPU<T> &x = *xptr; 
+    const MatrixGPU<T> &y = *yptr; 
+    MatrixGPU<T> &dest = *destptr; 
     size_t xIndex = blockIdx.x * blockDim.x + threadIdx.x;
     size_t xStride = gridDim.x * blockDim.x;
     size_t yIndex = blockIdx.y * blockDim.y + threadIdx.y;
