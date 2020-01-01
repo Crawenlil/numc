@@ -1,5 +1,22 @@
 #include "numc.cuh"
 
+void* Managed::operator new(size_t len) {
+#ifdef DEBUG
+    printf("Managed new\n");
+#endif
+    void *ptr;
+    cudaMallocManaged(&ptr, len);
+    cudaDeviceSynchronize();
+    return ptr;
+}
+
+void Managed::operator delete(void *ptr) {
+#ifdef DEBUG
+    printf("Managed delete\n");
+#endif
+    cudaDeviceSynchronize();
+    cudaFree(ptr);
+}
 
 template <typename Op, typename T>
 __host__
@@ -9,8 +26,8 @@ void apply(const Matrix<T> &x, const Matrix<T> &y, Matrix<T> &dest, Op op) {
         (dest.getXDim() + THREADS_PER_BLOCK_2D - 1) / THREADS_PER_BLOCK_2D, 
         (dest.getYDim() + THREADS_PER_BLOCK_2D - 1) / THREADS_PER_BLOCK_2D
     );
-    operation_kernel<<<numBlocks, threadsPerBlock>>>(
-            x.matrixGPU, y.matrixGPU, dest.matrixGPU, op);
+    operation_kernel<<<numBlocks, threadsPerBlock>>>(*x.matrixGPU, *y.matrixGPU,
+            *dest.matrixGPU, op);
     cudaError_t errSync  = cudaGetLastError();
     cudaError_t errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess){
@@ -23,13 +40,7 @@ void apply(const Matrix<T> &x, const Matrix<T> &y, Matrix<T> &dest, Op op) {
 
 template<typename Op, typename T>
 __global__
-void operation_kernel(const MatrixGPU<T> *xptr,
-                      const  MatrixGPU<T> *yptr, 
-                      MatrixGPU<T> *destptr, 
-                      Op op) {
-    const MatrixGPU<T> &x = *xptr; 
-    const MatrixGPU<T> &y = *yptr; 
-    MatrixGPU<T> &dest = *destptr; 
+void operation_kernel(const MatrixGPU<T> &x, const MatrixGPU<T> &y, MatrixGPU<T> &dest, Op op) {
     size_t xIndex = blockIdx.x * blockDim.x + threadIdx.x;
     size_t xStride = gridDim.x * blockDim.x;
     size_t yIndex = blockIdx.y * blockDim.y + threadIdx.y;

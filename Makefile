@@ -14,7 +14,7 @@ include=include/
 build=build/
 
 all: $(build)numc.o
-	$(CC) -o $(bin)main $(CUDALIB) $(CUDAINC) $(INCDIRS) $(LIBS) $(GXXFLAGS) $(src)main.cpp $(build)numc.o 
+	$(CC) $(CUDALIB) $(CUDAINC) $(INCDIRS) $(LIBS) $(GXXFLAGS) $(src)main.cpp $(build)numc.o -o $(bin)main 
 
 $(build)numc.o: $(src)numc.cu $(include)numc.cuh
 	$(NVCC) $(CUDAFLAGS) $(INCDIRS) $(src)numc.cu -o $(build)numc.o
