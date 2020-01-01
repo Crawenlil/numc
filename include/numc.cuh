@@ -10,6 +10,11 @@
 #define THREADS_PER_BLOCK_1D 256
 #define THREADS_PER_BLOCK_2D 16
 
+#define INSTANTIATE_operation_kernel(TYPE, OP) \
+    template __global__ void operation_kernel<OP<TYPE>, TYPE>(\
+            const typename Matrix<TYPE>::MatrixGPU *,\
+            const typename Matrix<TYPE>::MatrixGPU *,\
+            typename Matrix<TYPE>::MatrixGPU *, OP<TYPE>);
 
 template <typename T>
 class Matrix;
@@ -257,7 +262,7 @@ template <typename T>
 __host__
 Matrix<T> Matrix<T>::operator+(const Matrix<T> &other) const {
     Matrix dest(getXDim(), getYDim());
-    apply(*this, other, dest, Sub<T>());
+    apply(*this, other, dest, Add<T>());
     return dest;
 }
 
