@@ -25,6 +25,7 @@ void operation_kernel(const typename Matrix<T>::MatrixGPU *x,
                       typename Matrix<T>::MatrixGPU *dest,
                       Op op);
 
+
 template<typename T>
 class Add{
 public:
@@ -51,7 +52,7 @@ public:
 
 template <typename T>
 class Matrix{
-    private: 
+    public: 
 
         class MatrixGPU {
         private:
