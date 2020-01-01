@@ -53,4 +53,4 @@ void operation_kernel(const MatrixGPU<T> &x, const MatrixGPU<T> &y, MatrixGPU<T>
 }
 
 template class Matrix<float>;
-INSTANTIATE_operation_kernel(float, Add);
+// INSTANTIATE_operation_kernel(float, Add);

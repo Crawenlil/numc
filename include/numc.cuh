@@ -12,13 +12,6 @@
 #define THREADS_PER_BLOCK_1D 256
 #define THREADS_PER_BLOCK_2D 16
 
-#define INSTANTIATE_operation_kernel(TYPE, OP) \
-    template __global__ void operation_kernel<OP<TYPE>, TYPE>(\
-            const MatrixGPU<TYPE> &,\
-            const MatrixGPU<TYPE> &,\
-            MatrixGPU<TYPE> &, OP<TYPE>);
-
-
 template <typename T>
 class MatrixGPU;
 
