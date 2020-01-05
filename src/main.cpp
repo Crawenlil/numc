@@ -23,34 +23,23 @@ int main(){
     y(1,1) = 6.0;
     y(2,1) = 7.0;
     y(3,1) = 8.0;
-
-    // const unsigned int nrows = 100;
-    // const unsigned int ncols = 100;
-    // Matrix<float> x(nrows, ncols);
-    // Matrix<float> y(nrows, ncols);
-    // Matrix<float> z;
-
-    // for (size_t i = 0; i < nrows; ++i){
-    //     for (size_t j = 0; j < ncols; ++j){
-    //         x(i, j) = 3.0f;
-    //         y(i, j) = 2.0f;
-    //     }
-    // }
-
-    // z = x + y;
-    // std::cout << x(nrows-1, ncols-1) << " + " << y(nrows-1, ncols-1) << " = "<< z(nrows-1, ncols-1) << std::endl;
-    // z = x - y;
-    // std::cout << x(nrows-1, ncols-1) << " - " << y(nrows-1, ncols-1) << " = "<< z(nrows-1, ncols-1) << std::endl;
-    // z = x * y;
-    // std::cout << x(nrows-1, ncols-1) << " * " << y(nrows-1, ncols-1) << " = "<< z(nrows-1, ncols-1) << std::endl;
-    // z = x / y;
-    // std::cout << x(nrows-1, ncols-1) << " / " << y(nrows-1, ncols-1) << " = "<< z(nrows-1, ncols-1) << std::endl;
     z = x.mm(y);
-    for (int i = 0; i < z.getRows(); ++i){
-        for (int j = 0; j < z.getCols(); ++j){
-            std::cout << "z(" << i << ", " << j << ") = " << z(i,j) << std::endl;
+    std::cout << z << std::endl;
+
+    const unsigned int nrows = 40;
+    const unsigned int ncols = 40;
+    Matrix<float> a(nrows, ncols);
+    Matrix<float> b(nrows, ncols);
+    Matrix<float> c;
+
+    for (size_t i = 0; i < nrows; ++i){
+        for (size_t j = 0; j < ncols; ++j){
+            a(i, j) = 2.0f;
+            b(i, j) = 5.0f;
         }
     }
 
+    c = a + b;
+    std::cout << c << std::endl; 
     return 0;
 } 

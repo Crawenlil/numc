@@ -2,7 +2,10 @@
 #define NUMC_H
 
 #include <algorithm>
+#include <cmath>
+#include <ctime>
 #include <stdio.h>
+#include <iomanip>
 #include <cuda.h>
 #include <functional>
 #include "cuda_runtime.h"
@@ -93,6 +96,10 @@ class MatrixGPU: public Managed {
         // assignment
         __host__ MatrixGPU<T>& operator=(const MatrixGPU<T> &other);
         // functions
+        __host__ __device__ T* begin() const{return elements;}
+        __host__ __device__ T* end() const{return elements + (*nrows) * (*ncols);}
+        __host__ __device__ T* begin() {return elements;}
+        __host__ __device__ T* end() {return elements + (*nrows) * (*ncols);}
         __host__ __device__ size_t& getRows() const;
         __host__ __device__ size_t& getCols() const;
         __host__ __device__ const T& operator()(size_t i, size_t j) const;
@@ -128,9 +135,10 @@ class Matrix{
         Matrix<T>& operator-=(const Matrix& other);
         Matrix<T>& operator*=(const Matrix& other);
         Matrix<T>& operator/=(const Matrix& other);
-
-        
+        T getMin() const;
+        T getMax() const;
 };
+
 ///////////////
 // MatrixGPU //
 ///////////////
@@ -369,4 +377,79 @@ Matrix<T>& Matrix<T>::operator/=(const Matrix<T> &other) {
     return *this;
 }
 
+template <typename T>
+T Matrix<T>::getMin() const {
+    return *std::min_element(matrixGPU->begin(), matrixGPU->end());
+}
+
+template <typename T>
+T Matrix<T>::getMax() const {
+    return *std::max_element(matrixGPU->begin(), matrixGPU->end());
+}
+
+template <typename T>
+int numDigits(T number)
+{
+    int digits = 0;
+    if (number < 0){
+        digits = 1;
+        number *= -1;
+    }
+    while (number > 10) {
+        number /= 10;
+        digits++;
+    }
+    return ++digits;
+}
+
+template <typename T>
+std::ostream& _printRow(std::ostream &out, const Matrix<T> &matrix, const int row, const int cols, const int maxlen) {
+    out << "[";
+    if (cols < 10) { //rows < 10 cols < 10
+        for (int col = 0; col < cols; ++col) {
+            out << std::setw(maxlen + 3) << std::right << matrix(row, col);
+            if (col + 1 < cols) {
+                out << ", ";
+            }
+        }
+        out << "]" << std::endl;
+    } else {  // cols > 10
+        for (int col = 0; col < 3; ++col) {
+            out << std::setw(maxlen + 3) << std::right << matrix(row, col);
+            out << ", ";
+        }
+        out << std::setw(5) << std::left << "...,";
+        for (int col = cols - 3; col < cols; ++col) {
+            out << std::setw(maxlen + 3) << std::right << matrix(row, col);
+            if (col + 1 < cols) {
+                out << ", ";
+            }
+        }
+        out << "]" << std::endl;
+    }
+    return out;
+}
+
+template <typename T>
+std::ostream& operator<< (std::ostream &out, const Matrix<T> &matrix) {
+    int maxlen = std::max(numDigits(matrix.getMax()), numDigits(matrix.getMin()));
+    size_t rows = matrix.getRows();
+    size_t cols = matrix.getCols();
+    out << "Matrix [" << rows << ", " << cols << "]" << std::endl;
+    out << std::fixed << std::setprecision(2) << std::setfill(' ');
+    if (rows < 10){
+        for (int row = 0; row < rows; ++row) {
+            _printRow(out, matrix, row, cols, maxlen);
+        }
+    } else { // rows > 10
+        for (int row = 0; row < 3; ++row) {
+            _printRow(out, matrix, row, cols, maxlen);
+        }
+        out  << "...," << std::endl;
+        for (int row = rows - 3; row < rows; ++row) {
+            _printRow(out, matrix, row, cols, maxlen);
+        }
+    } 
+    return out;
+}
 #endif // NUMC_H

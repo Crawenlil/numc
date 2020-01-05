@@ -39,11 +39,9 @@ void applyMatMul(const Matrix<T> &x, const Matrix<T> &y, Matrix<T> &dest) {
     cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0);
     dim3 threadsPerBlock(THREADS_PER_BLOCK_2D, THREADS_PER_BLOCK_2D);
     dim3 numBlocks;
-    // size_t threshold = numSMs * 32;
-    // numBlocks.x = std::min(threshold, (dest.getRows() + THREADS_PER_BLOCK_2D - 1) / THREADS_PER_BLOCK_2D);
-    // numBlocks.y = std::min(threshold, (dest.getCols() + THREADS_PER_BLOCK_2D - 1) / THREADS_PER_BLOCK_2D);
-    numBlocks.x = 2;
-    numBlocks.y = 2;
+    size_t threshold = numSMs * 32;
+    numBlocks.x = std::min(threshold, (dest.getRows() + THREADS_PER_BLOCK_2D - 1) / THREADS_PER_BLOCK_2D);
+    numBlocks.y = std::min(threshold, (dest.getCols() + THREADS_PER_BLOCK_2D - 1) / THREADS_PER_BLOCK_2D);
     matMulKernel<<<numBlocks, threadsPerBlock>>>(*x.matrixGPU, *y.matrixGPU, *dest.matrixGPU);
     gpuErrchk(cudaGetLastError());
     gpuErrchk(cudaDeviceSynchronize());
