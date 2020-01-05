@@ -18,3 +18,7 @@ all: $(build)numc.o
 
 $(build)numc.o: $(src)numc.cu $(include)numc.cuh
 	$(NVCC) $(CUDAFLAGS) $(INCDIRS) $(src)numc.cu -o $(build)numc.o
+
+clean: 
+	rm $(build)numc.o $(bin)main
+
