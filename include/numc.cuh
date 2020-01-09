@@ -40,13 +40,21 @@ template <typename T>
 __host__
 void applyMatMul(const Matrix<T> &x, const Matrix<T> &y, Matrix<T> &dest);
 
+template <typename T>
+__host__
+void applyRepeat(const Matrix<T> &x, Matrix<T> &dest);
+
 template<typename Op, typename T>
 __global__
-void elementWiseKernel(const MatrixGPU<T> *x, const MatrixGPU<T> *y, MatrixGPU<T> *dest, Op op);
+void elementWiseKernel(const MatrixGPU<T> &x, const MatrixGPU<T> &y, MatrixGPU<T> &dest, Op op);
 
 template<typename T>
 __global__
-void matMulKernel(const MatrixGPU<T> *x, const MatrixGPU<T> *y, MatrixGPU<T> *dest);
+void matMulKernel(const MatrixGPU<T> &x, const MatrixGPU<T> &y, MatrixGPU<T> &dest);
+
+template<typename T>
+__global__
+void repeatKernel(const MatrixGPU<T> &x, MatrixGPU<T> &dest);
 
 template<typename T>
 class Add{
@@ -137,6 +145,7 @@ class Matrix{
         Matrix<T>& operator/=(const Matrix& other);
         T getMin() const;
         T getMax() const;
+        Matrix<T> repeat(const size_t trows=1, const size_t tcols=1);
 };
 
 ///////////////
@@ -386,6 +395,15 @@ template <typename T>
 T Matrix<T>::getMax() const {
     return *std::max_element(matrixGPU->begin(), matrixGPU->end());
 }
+
+
+template <typename T>
+Matrix<T> Matrix<T>::repeat(const size_t trows, const size_t tcols) {
+    Matrix<T> dest(trows * getRows(), tcols*getCols());
+    applyRepeat(*this, dest);
+    return dest;
+}
+
 
 template <typename T>
 int numDigits(T number)

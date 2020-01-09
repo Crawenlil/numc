@@ -47,6 +47,21 @@ void applyMatMul(const Matrix<T> &x, const Matrix<T> &y, Matrix<T> &dest) {
     gpuErrchk(cudaDeviceSynchronize());
 }
 
+template <typename T>
+__host__
+void applyRepeat(const Matrix<T> &x, Matrix<T> &dest) {
+    int numSMs;
+    cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0);
+    dim3 threadsPerBlock(THREADS_PER_BLOCK_2D, THREADS_PER_BLOCK_2D);
+    dim3 numBlocks;
+    size_t threshold = numSMs * 32;
+    numBlocks.x = std::min(threshold, (dest.getRows() + THREADS_PER_BLOCK_2D - 1) / THREADS_PER_BLOCK_2D);
+    numBlocks.y = std::min(threshold, (dest.getCols() + THREADS_PER_BLOCK_2D - 1) / THREADS_PER_BLOCK_2D);
+    repeatKernel<<<numBlocks, threadsPerBlock>>>(*x.matrixGPU, *dest.matrixGPU);
+    gpuErrchk(cudaGetLastError());
+    gpuErrchk(cudaDeviceSynchronize());
+}
+
 template<typename Op, typename T>
 __global__
 void elementWiseKernel(const MatrixGPU<T> &x, const MatrixGPU<T> &y, MatrixGPU<T> &dest, Op op) {
@@ -109,6 +124,20 @@ void matMulKernel(const MatrixGPU<T> &x, const MatrixGPU<T> &y, MatrixGPU<T> &de
                     printf("dest value : %f\n", destValue);
                 #endif
             }
+        }
+    }
+}
+
+template<typename T>
+__global__
+void repeatKernel(const MatrixGPU<T> &x, MatrixGPU<T> &dest) {
+    const size_t xIndex = blockIdx.x * blockDim.x + threadIdx.x;
+    const size_t xStride = gridDim.x * blockDim.x;
+    const size_t yIndex = blockIdx.y * blockDim.y + threadIdx.y;
+    const size_t yStride = gridDim.y * blockDim.y;
+    for (size_t i = xIndex; i < dest.getRows(); i+= xStride){
+        for (size_t j = yIndex; j < dest.getCols(); j+= yStride){
+            dest(i, j) = x(i % x.getRows(), j % x.getCols());
         }
     }
 }
